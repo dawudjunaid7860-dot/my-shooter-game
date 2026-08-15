@@ -31,6 +31,7 @@ import { FieldPickupSystem, AMMO_REFILL, GRENADE_PICKUP_AMOUNT } from "./fieldPi
 import { GrenadeSystem } from "./grenade.js";
 import { WeaponWheel } from "./weaponwheel.js";
 import { getLevelConfig } from "./levels.js";
+import { TouchControls } from "./touchControls.js";
 
 const canvas = document.getElementById("scene");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -42,6 +43,7 @@ const camera = createTopDownCamera(window.innerWidth / window.innerHeight);
 
 createLights(scene);
 const input = new InputManager(canvas);
+const touch = new TouchControls();
 const hud = new HUD();
 const save = new SaveState();
 const minimap = new Minimap(document.getElementById("minimap"), PLAY_HALF_EXTENT);
@@ -203,6 +205,7 @@ function playLevel(level) {
   hud.updateAmmo(player.ammo, player.maxAmmo, false, 1, player.reserveAmmo);
   hud.updateReserve(player.reserveAmmo);
   hud.updateWeapon(player.weaponDef.label, player.weaponDef.icon);
+  touch.setWeaponIcon(player.weaponDef.icon);
   hud.updateGrenades(player.grenades);
   hud.updateScore(save.currency);
   hud.updateWave(level);
@@ -244,16 +247,17 @@ function resolveEnemyDeath(enemy) {
 }
 
 function updateGameplay(dt) {
-  const aimPoint = input.getGroundAimPoint(camera);
-  const moveVec = input.getMoveVector();
+  const aimPoint = touch.active ? touch.getAimPoint(player.position) : input.getGroundAimPoint(camera);
+  const moveVec = touch.active ? touch.getMoveVector() : input.getMoveVector();
+  const firing = touch.active ? touch.firing : input.firing;
   player.aimAt(aimPoint);
   player.move(moveVec, dt, colliders);
   player.update(dt);
   footstepDust.update(dt, player.position, moveVec.x !== 0 || moveVec.z !== 0);
 
-  if (input.consumeReloadPress()) player.startReload();
+  if (!touch.active && input.consumeReloadPress()) player.startReload();
 
-  if (input.firing && player.canFire()) {
+  if (firing && player.canFire()) {
     player.fire();
     const forward = player.getForward();
     const spawnPos = {
@@ -265,7 +269,8 @@ function updateGameplay(dt) {
     audio.play("gunshot");
   }
 
-  if (input.consumeGrenadeThrow() && player.canThrowGrenade()) {
+  const grenadePressed = touch.active ? touch.consumeGrenadeThrow() : input.consumeGrenadeThrow();
+  if (grenadePressed && player.canThrowGrenade()) {
     player.throwGrenade();
     grenadeSystem.spawn(player.position, aimPoint);
   }
@@ -363,6 +368,7 @@ function updateGameplay(dt) {
   hud.updateAmmo(player.ammo, player.maxAmmo, player.isReloading, player.reloadProgress, player.reserveAmmo);
   hud.updateReserve(player.reserveAmmo);
   hud.updateWeapon(player.weaponDef.label, player.weaponDef.icon);
+  touch.setWeaponIcon(player.weaponDef.icon);
   hud.updateGrenades(player.grenades);
   hud.updateEnemiesLeft(Math.max(0, enemySpawner.config.enemyQuota - enemySpawner.killedCount));
   hud.updateBuffs(player.speedBoostTimer, player.rapidFireTimer);
@@ -384,12 +390,15 @@ function animate(now) {
 
   hud.updateCrosshair(input.mouseScreen.x, input.mouseScreen.y);
 
+  const wheelOpen = touch.active ? touch.wheelOpen : input.wheelOpen;
+  const wheelPos = touch.active ? touch.wheelPos : input.mouseScreen;
+
   if (gameState === "playing") {
     if (input.consumePausePress()) {
       openPause();
-    } else if (input.wheelOpen) {
+    } else if (wheelOpen) {
       if (!wasWheelOpen) weaponWheel.show(player);
-      weaponWheel.updateHover(input.mouseScreen, player);
+      weaponWheel.updateHover(wheelPos, player);
       wasWheelOpen = true;
     } else {
       if (wasWheelOpen) {
