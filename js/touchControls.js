@@ -109,6 +109,7 @@ export class TouchControls {
 
     this.root = document.createElement("div");
     this.root.id = "touch-controls";
+    this.root.classList.add("hidden"); // only shown during actual gameplay, see setVisible()
     document.getElementById("app").appendChild(this.root);
 
     this.moveZone = document.createElement("div");
@@ -179,6 +180,28 @@ export class TouchControls {
       this.weaponBtn.iconEl = icon;
     }
     if (this.weaponBtn.iconEl.src !== iconSrc) this.weaponBtn.iconEl.src = iconSrc;
+  }
+
+  // Only meant to be interactable during actual gameplay — otherwise the
+  // (mostly invisible) full-height joystick zones sit on top of every menu
+  // screen in DOM stacking order and silently eat clicks on the buttons
+  // underneath (Play, level cards, Resume, etc).
+  setVisible(visible) {
+    if (!this.active) return;
+    this.root.classList.toggle("hidden", !visible);
+    if (!visible) {
+      // Release any in-progress touch so nothing is left "stuck" firing/
+      // aiming/holding the wheel open across a screen transition.
+      this.moveStick.active = false;
+      this.moveStick.pointerId = null;
+      this.moveStick.x = 0;
+      this.moveStick.z = 0;
+      this.aimStick.active = false;
+      this.aimStick.pointerId = null;
+      this.aimStick.x = 0;
+      this.aimStick.z = 0;
+      this.wheelOpen = false;
+    }
   }
 
   getMoveVector() {

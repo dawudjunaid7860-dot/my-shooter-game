@@ -389,6 +389,7 @@ function animate(now) {
   lastTime = now;
 
   hud.updateCrosshair(input.mouseScreen.x, input.mouseScreen.y);
+  touch.setVisible(gameState === "playing");
 
   const wheelOpen = touch.active ? touch.wheelOpen : input.wheelOpen;
   const wheelPos = touch.active ? touch.wheelPos : input.mouseScreen;
