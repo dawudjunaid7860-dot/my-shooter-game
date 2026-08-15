@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tank Assault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene"></canvas>
+
+    <div id="crosshair"></div>
+
+    <div id="hud">
+      <div id="hud-top-left" class="hud-panel">
+        <div class="bar-label">HEALTH</div>
+        <div class="bar-track">
+          <div id="health-fill" class="bar-fill health"></div>
+        </div>
+        <div id="buff-row">
+          <span id="buff-speed" class="buff-chip" data-label="SPEED"></span>
+          <span id="buff-rapidfire" class="buff-chip" data-label="RAPID FIRE"></span>
+        </div>
+      </div>
+
+      <div id="hud-top-right" class="hud-panel">
+        <div class="stat-row">
+          <span class="bar-label">CURRENCY</span>
+          <span id="score" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="bar-label">LEVEL</span>
+          <span id="wave" class="stat-value">1</span>
+        </div>
+        <div class="stat-row">
+          <span class="bar-label">ENEMIES LEFT</span>
+          <span id="enemies-left" class="stat-value">0</span>
+        </div>
+      </div>
+
+      <div id="hud-bottom-right" class="hud-panel">
+        <div class="bar-label">AMMO</div>
+        <div id="ammo-count">30 / 30</div>
+        <div id="reload-hint">R to reload</div>
+        <div class="bar-track" id="reload-track">
+          <div id="reload-fill" class="bar-fill reload"></div>
+        </div>
+      </div>
+
+      <div id="hud-bottom-left" class="hud-panel">
+        <canvas id="minimap" width="160" height="160"></canvas>
+      </div>
+
+      <div id="boss-panel" class="hud-panel hidden">
+        <div class="bar-label boss-label">BOSS</div>
+        <div class="bar-track boss-track">
+          <div id="boss-health-fill" class="bar-fill boss"></div>
+        </div>
+      </div>
+
+      <div id="hit-flash"></div>
+    </div>
+
+    <!-- Home / title screen -->
+    <div id="home-screen" class="overlay">
+      <h1>TANK ASSAULT</h1>
+      <p class="loading" id="loading-text">Loading assets...</p>
+
+      <div id="home-content" class="hidden">
+        <div class="currency-display">
+          <img src="public/assets/kenney_ui-pack/PNG/Yellow/Default/star.png" alt="" class="currency-icon" />
+          <span id="home-currency">0</span>
+        </div>
+        <div id="character-select">
+          <button id="char-prev-btn" class="kenney-btn kenney-btn-grey kenney-btn-small char-arrow">&lsaquo;</button>
+          <div class="char-preview">
+            <img id="char-portrait" src="" alt="" />
+            <div id="char-name">Character</div>
+          </div>
+          <button id="char-next-btn" class="kenney-btn kenney-btn-grey kenney-btn-small char-arrow">&rsaquo;</button>
+        </div>
+
+        <div class="menu-buttons">
+          <button id="play-btn" class="kenney-btn kenney-btn-green">PLAY</button>
+          <button id="upgrades-btn" class="kenney-btn kenney-btn-grey">UPGRADES</button>
+          <button id="settings-btn" class="kenney-btn kenney-btn-grey">SETTINGS</button>
+        </div>
+
+        <div id="instructions">
+          <p><strong>WASD</strong> &mdash; move</p>
+          <p><strong>Mouse</strong> &mdash; aim</p>
+          <p><strong>Click</strong> &mdash; shoot</p>
+          <p><strong>R</strong> &mdash; reload</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upgrades screen -->
+    <div id="upgrades-screen" class="overlay hidden">
+      <h1>UPGRADES</h1>
+      <div class="currency-display">
+        <img src="public/assets/kenney_ui-pack/PNG/Yellow/Default/star.png" alt="" class="currency-icon" />
+        <span id="upgrades-currency">0</span>
+      </div>
+
+      <div id="upgrade-list"></div>
+
+      <button id="upgrades-back-btn" class="kenney-btn kenney-btn-grey">BACK</button>
+    </div>
+
+    <!-- Settings screen -->
+    <div id="settings-screen" class="overlay hidden">
+      <h1>SETTINGS</h1>
+
+      <div class="settings-list">
+        <div class="settings-row">
+          <label for="volume-slider">VOLUME</label>
+          <input type="range" id="volume-slider" min="0" max="1" step="0.05" />
+          <span id="volume-value" class="settings-value">70%</span>
+        </div>
+        <div class="settings-row">
+          <label for="sensitivity-slider">MOUSE SENSITIVITY</label>
+          <input type="range" id="sensitivity-slider" min="0.3" max="2.5" step="0.1" />
+          <span id="sensitivity-value" class="settings-value">1.0x</span>
+        </div>
+      </div>
+
+      <button id="settings-back-btn" class="kenney-btn kenney-btn-grey">BACK</button>
+    </div>
+
+    <!-- Level select screen -->
+    <div id="levelselect-screen" class="overlay hidden">
+      <h1>SELECT LEVEL</h1>
+      <div id="level-list"></div>
+      <button id="levelselect-back-btn" class="kenney-btn kenney-btn-grey">BACK</button>
+    </div>
+
+    <!-- Level complete screen -->
+    <div id="levelcomplete-screen" class="overlay hidden">
+      <h1>LEVEL <span id="lc-level">1</span> COMPLETE</h1>
+      <div class="lc-stats">
+        <p>Enemies defeated: <span id="lc-kills">0</span></p>
+        <p class="lc-currency-line">
+          <img src="public/assets/kenney_ui-pack/PNG/Yellow/Default/star.png" alt="" class="currency-icon small" />
+          Earned <span id="lc-currency">0</span>
+        </p>
+      </div>
+      <button id="continue-btn" class="kenney-btn kenney-btn-green">CONTINUE</button>
+    </div>
+
+    <div id="gameover-screen" class="overlay hidden">
+      <h1>GAME OVER</h1>
+      <p id="final-score">Currency earned: 0</p>
+      <div class="menu-buttons-row">
+        <button id="retry-btn" class="kenney-btn kenney-btn-green">RETRY</button>
+        <button id="home-btn" class="kenney-btn kenney-btn-grey">HOME</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
