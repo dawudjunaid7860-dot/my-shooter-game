@@ -1,18 +1,24 @@
 const STORAGE_KEY = "tankAssaultSave.v1";
+export const DEFAULT_MUSIC_VOLUME = 0.5;
 
+// ammoCapacity/fireRate/damage are BONUSES layered on top of whichever
+// weapon is currently equipped (see js/weapons.js WEAPON_TYPES) — guns now
+// come from map pickups rather than being one fixed loadout, so these
+// upgrades start at 0 and stack additively on top of a gun's own stats.
+// moveSpeed/maxHealth remain absolute, weapon-independent stats.
 export const UPGRADE_DEFS = {
   ammoCapacity: {
     label: "Ammo Capacity",
-    unit: "rounds",
-    base: 30,
-    perTier: 10,
+    unit: "bonus rounds",
+    base: 0,
+    perTier: 4,
     costs: [50, 100, 175, 275, 400],
   },
   fireRate: {
     label: "Fire Rate",
-    unit: "shots/s",
-    base: 6,
-    perTier: 0.75,
+    unit: "bonus shots/s",
+    base: 0,
+    perTier: 0.6,
     costs: [60, 120, 200, 300, 450],
   },
   moveSpeed: {
@@ -31,9 +37,9 @@ export const UPGRADE_DEFS = {
   },
   damage: {
     label: "Damage",
-    unit: "dmg/shot",
-    base: 34,
-    perTier: 8,
+    unit: "bonus dmg/shot",
+    base: 0,
+    perTier: 6,
     costs: [70, 140, 220, 320, 470],
   },
 };
@@ -43,7 +49,7 @@ function defaultSaveData() {
     currency: 0,
     unlockedLevel: 1,
     characterSkin: "manBlue",
-    settings: { volume: 0.7, sensitivity: 1 },
+    settings: { volume: 0.7, sensitivity: 1, musicVolume: DEFAULT_MUSIC_VOLUME },
     upgrades: { ammoCapacity: 0, fireRate: 0, moveSpeed: 0, maxHealth: 0, damage: 0 },
   };
 }
@@ -66,6 +72,7 @@ function loadSaveData() {
       settings: {
         volume: Number.isFinite(settings.volume) ? settings.volume : fallback.settings.volume,
         sensitivity: Number.isFinite(settings.sensitivity) ? settings.sensitivity : fallback.settings.sensitivity,
+        musicVolume: Number.isFinite(settings.musicVolume) ? settings.musicVolume : fallback.settings.musicVolume,
       },
       upgrades: { ...fallback.upgrades, ...(parsed.upgrades || {}) },
     };
@@ -141,6 +148,15 @@ export class SaveState {
 
   setSensitivity(value) {
     this.data.settings.sensitivity = value;
+    writeSaveData(this.data);
+  }
+
+  get musicVolume() {
+    return this.data.settings.musicVolume;
+  }
+
+  setMusicVolume(value) {
+    this.data.settings.musicVolume = value;
     writeSaveData(this.data);
   }
 

@@ -13,6 +13,9 @@ export class InputManager {
     this.sensitivity = 1;
     this.firing = false;
     this.reloadPressed = false;
+    this.wheelOpen = false;
+    this.grenadeThrowPressed = false;
+    this.pausePressed = false;
 
     this._raycaster = new THREE.Raycaster();
     this._groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -23,6 +26,7 @@ export class InputManager {
     canvas.addEventListener("mousemove", (e) => this._onMouseMove(e));
     canvas.addEventListener("mousedown", (e) => {
       if (e.button === 0) this.firing = true;
+      if (e.button === 2) this.grenadeThrowPressed = true;
     });
     window.addEventListener("mouseup", (e) => {
       if (e.button === 0) this.firing = false;
@@ -37,10 +41,13 @@ export class InputManager {
   _onKeyDown(e) {
     this.keys.add(e.code);
     if (e.code === "KeyR") this.reloadPressed = true;
+    if (e.code === "KeyQ") this.wheelOpen = true;
+    if (e.code === "Escape") this.pausePressed = true;
   }
 
   _onKeyUp(e) {
     this.keys.delete(e.code);
+    if (e.code === "KeyQ") this.wheelOpen = false;
   }
 
   _onMouseMove(e) {
@@ -57,6 +64,18 @@ export class InputManager {
   consumeReloadPress() {
     const pressed = this.reloadPressed;
     this.reloadPressed = false;
+    return pressed;
+  }
+
+  consumeGrenadeThrow() {
+    const pressed = this.grenadeThrowPressed;
+    this.grenadeThrowPressed = false;
+    return pressed;
+  }
+
+  consumePausePress() {
+    const pressed = this.pausePressed;
+    this.pausePressed = false;
     return pressed;
   }
 

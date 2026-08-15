@@ -1,10 +1,16 @@
 import { createGroundSprite, createBlobShadow } from "./world.js";
 import { clamp } from "./utils.js";
+import { WEAPON_TYPES, GRENADE_TYPE } from "./weapons.js";
 
-const DEFAULT_STATS = { ammoCapacity: 30, fireRate: 6, moveSpeed: 9, maxHealth: 100, damage: 34 };
+const DEFAULT_STATS = { ammoCapacity: 0, fireRate: 0, moveSpeed: 9, maxHealth: 100, damage: 0 };
+const STARTER_WEAPON = "pistol";
 
 export class Player {
   // texture is the chosen character skin's sprite (see js/characters.js).
+  // stats come from SaveState.getStats() — moveSpeed/maxHealth are absolute,
+  // while ammoCapacity/fireRate/damage are bonuses layered on top of
+  // whichever weapon (see js/weapons.js) is currently equipped, since guns
+  // are now found on the map rather than being a single fixed loadout.
   constructor(scene, texture, bounds, stats = {}) {
     const { ammoCapacity, fireRate, moveSpeed, maxHealth, damage } = { ...DEFAULT_STATS, ...stats };
 
@@ -12,10 +18,9 @@ export class Player {
     this.speed = moveSpeed;
     this.maxHealth = maxHealth;
     this.health = maxHealth;
-    this.maxAmmo = ammoCapacity;
-    this.ammo = ammoCapacity;
-    this.fireRate = fireRate; // shots per second
-    this.damage = damage; // per-bullet damage
+    this.ammoBonus = ammoCapacity;
+    this.fireRateBonus = fireRate;
+    this.damageBonus = damage;
     this.reloadDuration = 1.6;
     this.isReloading = false;
     this.invulnTimer = 0;
@@ -24,6 +29,7 @@ export class Player {
 
     this._fireCooldown = 0;
     this._reloadTimer = 0;
+    this._reloadAmount = 0;
 
     // Temporary power-up buffs.
     this.speedMultiplier = 1;
@@ -31,12 +37,27 @@ export class Player {
     this.fireRateMultiplier = 1;
     this.rapidFireTimer = 0;
 
+    this.weapons = {};
+    this.currentWeaponId = STARTER_WEAPON;
+    this.grenades = 0;
+    this._grenadeCooldown = 0;
+    this._initWeapons();
+
     this.mesh = createGroundSprite(texture, 1.8, 0.09);
     this.mesh.position.set(0, 0.09, 0);
     scene.add(this.mesh);
 
     this.shadow = createBlobShadow(1.6);
     scene.add(this.shadow);
+  }
+
+  _initWeapons() {
+    this.weapons = {};
+    const starter = WEAPON_TYPES[STARTER_WEAPON];
+    this.weapons[STARTER_WEAPON] = { ammo: starter.ammoCapacity, reserve: starter.startingReserve };
+    this.currentWeaponId = STARTER_WEAPON;
+    this.grenades = 0;
+    this._grenadeCooldown = 0;
   }
 
   get position() {
@@ -47,9 +68,37 @@ export class Player {
     return this.mesh.rotation.z;
   }
 
+  // Current weapon's stat block, including upgrade bonuses.
+  get weaponDef() {
+    return WEAPON_TYPES[this.currentWeaponId];
+  }
+
+  get maxAmmo() {
+    return this.weaponDef.ammoCapacity + this.ammoBonus;
+  }
+
+  get ammo() {
+    return this.weapons[this.currentWeaponId].ammo;
+  }
+
+  get reserveAmmo() {
+    return this.weapons[this.currentWeaponId].reserve;
+  }
+
+  get damage() {
+    return this.weaponDef.damage + this.damageBonus;
+  }
+
+  get fireRate() {
+    return this.weaponDef.fireRate + this.fireRateBonus;
+  }
+
+  get ownedWeaponIds() {
+    return Object.keys(this.weapons);
+  }
+
   reset() {
     this.health = this.maxHealth;
-    this.ammo = this.maxAmmo;
     this.isReloading = false;
     this.invulnTimer = 0;
     this.alive = true;
@@ -59,6 +108,7 @@ export class Player {
     this.speedBoostTimer = 0;
     this.fireRateMultiplier = 1;
     this.rapidFireTimer = 0;
+    this._initWeapons();
     this.mesh.position.set(0, 0.09, 0);
     this.mesh.rotation.z = 0;
     this.shadow.position.set(0, 0.03, 0);
@@ -116,6 +166,7 @@ export class Player {
   update(dt) {
     if (this._fireCooldown > 0) this._fireCooldown -= dt;
     if (this.invulnTimer > 0) this.invulnTimer -= dt;
+    if (this._grenadeCooldown > 0) this._grenadeCooldown -= dt;
 
     if (this.speedBoostTimer > 0) {
       this.speedBoostTimer -= dt;
@@ -130,7 +181,10 @@ export class Player {
       this._reloadTimer -= dt;
       if (this._reloadTimer <= 0) {
         this.isReloading = false;
-        this.ammo = this.maxAmmo;
+        const slot = this.weapons[this.currentWeaponId];
+        slot.ammo += this._reloadAmount;
+        slot.reserve -= this._reloadAmount;
+        this._reloadAmount = 0;
       }
     }
   }
@@ -140,7 +194,7 @@ export class Player {
   }
 
   fire() {
-    this.ammo -= 1;
+    this.weapons[this.currentWeaponId].ammo -= 1;
     this._fireCooldown = 1 / (this.fireRate * this.fireRateMultiplier);
     if (this.ammo <= 0) this.startReload();
   }
@@ -160,14 +214,56 @@ export class Player {
   }
 
   startReload() {
-    if (this.isReloading || this.ammo === this.maxAmmo) return;
+    if (this.isReloading) return;
+    const slot = this.weapons[this.currentWeaponId];
+    if (slot.ammo >= this.maxAmmo || slot.reserve <= 0) return;
     this.isReloading = true;
-    this._reloadTimer = this.reloadDuration;
+    this._reloadTimer = this.weaponDef.reloadDuration;
+    this._reloadAmount = Math.min(this.maxAmmo - slot.ammo, slot.reserve);
   }
 
   get reloadProgress() {
     if (!this.isReloading) return 1;
-    return 1 - this._reloadTimer / this.reloadDuration;
+    return 1 - this._reloadTimer / this.weaponDef.reloadDuration;
+  }
+
+  // Adds a weapon to the collection (topping up its reserve if already
+  // owned) — called when the player walks over a weapon pickup. Does not
+  // auto-equip; switching is done via the weapon wheel.
+  addWeapon(id) {
+    const def = WEAPON_TYPES[id];
+    if (!def) return;
+    if (this.weapons[id]) {
+      this.weapons[id].reserve += def.ammoCapacity;
+    } else {
+      this.weapons[id] = { ammo: def.ammoCapacity, reserve: def.startingReserve };
+    }
+  }
+
+  // Refills the reserve of whichever weapon is currently equipped.
+  addAmmo(amount) {
+    this.weapons[this.currentWeaponId].reserve += amount;
+  }
+
+  addGrenades(amount) {
+    this.grenades += amount;
+  }
+
+  switchWeapon(id) {
+    if (!this.weapons[id] || id === this.currentWeaponId) return;
+    this.currentWeaponId = id;
+    this.isReloading = false;
+    this._reloadAmount = 0;
+    this._fireCooldown = Math.max(this._fireCooldown, 0.15); // brief switch delay
+  }
+
+  canThrowGrenade() {
+    return this.alive && this.grenades > 0 && this._grenadeCooldown <= 0;
+  }
+
+  throwGrenade() {
+    this.grenades -= 1;
+    this._grenadeCooldown = GRENADE_TYPE.cooldown;
   }
 
   takeDamage(amount) {

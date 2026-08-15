@@ -127,6 +127,33 @@ html, body {
   margin-bottom: 2px;
 }
 
+#weapon-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#weapon-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+#weapon-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #b7e778;
+}
+
+#reserve-count {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
 #ammo-count {
   font-size: 30px;
   font-weight: 700;
@@ -740,4 +767,187 @@ html, body {
   height: 6px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.45);
+}
+
+/* Pause button + grenade HUD chip */
+.hud-icon-btn {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(183, 231, 120, 0.4);
+  background: linear-gradient(160deg, rgba(16, 26, 16, 0.8), rgba(8, 14, 8, 0.7));
+  color: #eaf5ea;
+  font-size: 14px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.hud-icon-btn:hover {
+  filter: brightness(1.2);
+}
+
+#hud-bottom-center {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  min-width: 200px;
+}
+
+#hud-bottom-center.hidden {
+  display: none;
+}
+
+#grenade-count {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.pickup-hint {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+#pickup-toast {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(183, 231, 120, 0.25), rgba(122, 199, 79, 0.15));
+  border: 1px solid rgba(183, 231, 120, 0.5);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+#pickup-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(6px);
+}
+
+/* Radial weapon wheel */
+#weapon-wheel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+#weapon-wheel.hidden {
+  display: none;
+}
+
+#weapon-wheel-ring {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(8, 14, 8, 0.35) 0%, rgba(8, 14, 8, 0.75) 60%, rgba(8, 14, 8, 0.85) 100%);
+  border: 2px solid rgba(183, 231, 120, 0.3);
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
+}
+
+#weapon-wheel-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  width: 70px;
+}
+
+.wheel-slice {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 92px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
+}
+
+.wheel-slice img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.6));
+}
+
+.wheel-slice-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  color: #eaf5ea;
+}
+
+.wheel-slice-ammo {
+  font-size: 11px;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.wheel-slice-lock {
+  display: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #ff8f8f;
+  margin-top: 2px;
+}
+
+.wheel-slice.locked {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.wheel-slice.locked .wheel-slice-lock {
+  display: block;
+}
+
+.wheel-slice.current {
+  border-color: rgba(255, 216, 115, 0.6);
+  background: rgba(255, 216, 115, 0.08);
+}
+
+.wheel-slice.hovered {
+  transform: translate(-50%, -50%) scale(1.12);
+  background: rgba(183, 231, 120, 0.18);
+  border-color: rgba(183, 231, 120, 0.7);
+}
+
+/* Pause screen */
+.pause-objective {
+  max-width: 480px;
+  font-size: 15px;
+  opacity: 0.85;
+  margin: 4px 0 10px;
+}
+
+#pause-music-row {
+  width: min(420px, 90vw);
+  margin: 4px 0 2px;
 }

@@ -40,6 +40,9 @@ export class ScreenManager {
     onNextCharacter,
     onVolumeChange,
     onSensitivityChange,
+    onMusicChange,
+    onMusicReset,
+    onResume,
   }) {
     this.homeScreen = document.getElementById("home-screen");
     this.homeContent = document.getElementById("home-content");
@@ -57,6 +60,13 @@ export class ScreenManager {
     this.volumeValue = document.getElementById("volume-value");
     this.sensitivitySlider = document.getElementById("sensitivity-slider");
     this.sensitivityValue = document.getElementById("sensitivity-value");
+    this.musicSlider = document.getElementById("music-slider");
+    this.musicValue = document.getElementById("music-value");
+
+    this.pauseScreen = document.getElementById("pause-screen");
+    this.pauseObjective = document.getElementById("pause-objective");
+    this.pauseMusicSlider = document.getElementById("pause-music-slider");
+    this.pauseMusicValue = document.getElementById("pause-music-value");
 
     this.levelSelectScreen = document.getElementById("levelselect-screen");
     this.levelList = document.getElementById("level-list");
@@ -94,6 +104,28 @@ export class ScreenManager {
     document.getElementById("home-btn").addEventListener("click", onBackHome);
     document.getElementById("char-prev-btn").addEventListener("click", onPrevCharacter);
     document.getElementById("char-next-btn").addEventListener("click", onNextCharacter);
+
+    this.musicSlider.addEventListener("input", () => {
+      const value = Number(this.musicSlider.value);
+      this.syncMusicDisplays(value);
+      onMusicChange(value);
+    });
+    document.getElementById("music-reset-btn").addEventListener("click", () => onMusicReset());
+    this.pauseMusicSlider.addEventListener("input", () => {
+      const value = Number(this.pauseMusicSlider.value);
+      this.syncMusicDisplays(value);
+      onMusicChange(value);
+    });
+    document.getElementById("pause-music-reset-btn").addEventListener("click", () => onMusicReset());
+    document.getElementById("pause-resume-btn").addEventListener("click", onResume);
+    document.getElementById("pause-home-btn").addEventListener("click", onBackHome);
+  }
+
+  syncMusicDisplays(value) {
+    this.musicSlider.value = value;
+    this.musicValue.textContent = `${Math.round(value * 100)}%`;
+    this.pauseMusicSlider.value = value;
+    this.pauseMusicValue.textContent = `${Math.round(value * 100)}%`;
   }
 
   setLoadingProgress(loaded, total) {
@@ -112,6 +144,7 @@ export class ScreenManager {
     this.levelSelectScreen.classList.add("hidden");
     this.levelCompleteScreen.classList.add("hidden");
     this.gameoverScreen.classList.add("hidden");
+    this.pauseScreen.classList.add("hidden");
   }
 
   showSettings(save) {
@@ -120,7 +153,20 @@ export class ScreenManager {
     this.volumeValue.textContent = `${Math.round(save.volume * 100)}%`;
     this.sensitivitySlider.value = save.sensitivity;
     this.sensitivityValue.textContent = `${save.sensitivity.toFixed(1)}x`;
+    this.syncMusicDisplays(save.musicVolume);
     this.settingsScreen.classList.remove("hidden");
+  }
+
+  // Shown on top of the (frozen) gameplay view — doesn't call hideAll()
+  // since the other menu overlays are already hidden while playing.
+  showPause(objectiveText, save) {
+    this.pauseObjective.textContent = objectiveText;
+    this.syncMusicDisplays(save.musicVolume);
+    this.pauseScreen.classList.remove("hidden");
+  }
+
+  hidePause() {
+    this.pauseScreen.classList.add("hidden");
   }
 
   showHome(save) {

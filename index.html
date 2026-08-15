@@ -50,8 +50,13 @@
       </div>
 
       <div id="hud-bottom-right" class="hud-panel">
+        <div id="weapon-name-row">
+          <img id="weapon-icon" src="" alt="" />
+          <span id="weapon-name">Pistol</span>
+        </div>
         <div class="bar-label">AMMO</div>
         <div id="ammo-count">30 / 30</div>
+        <div id="reserve-count">Reserve: 0</div>
         <div id="reload-hint">R to reload</div>
         <div class="bar-track" id="reload-track">
           <div id="reload-fill" class="bar-fill reload"></div>
@@ -69,7 +74,39 @@
         </div>
       </div>
 
+      <button id="pause-btn" class="hud-icon-btn" aria-label="Pause">&#10073;&#10073;</button>
+
+      <div id="hud-bottom-center" class="hud-panel hidden">
+        <div class="bar-label">GRENADES</div>
+        <div id="grenade-count">0</div>
+        <div class="pickup-hint">Right-click to throw &middot; Hold Q to swap gun</div>
+      </div>
+
       <div id="hit-flash"></div>
+      <div id="pickup-toast"></div>
+    </div>
+
+    <div id="weapon-wheel" class="hidden">
+      <div id="weapon-wheel-ring"></div>
+      <div id="weapon-wheel-center">Hold <strong>Q</strong></div>
+    </div>
+
+    <!-- Pause overlay -->
+    <div id="pause-screen" class="overlay hidden">
+      <h1>PAUSED</h1>
+      <p id="pause-objective" class="pause-objective"></p>
+      <div class="settings-list" id="pause-music-row">
+        <div class="settings-row">
+          <label for="pause-music-slider">MUSIC</label>
+          <input type="range" id="pause-music-slider" min="0" max="1" step="0.05" />
+          <span id="pause-music-value" class="settings-value">50%</span>
+        </div>
+      </div>
+      <button id="pause-music-reset-btn" class="kenney-btn kenney-btn-grey kenney-btn-small">RESET MUSIC VOLUME</button>
+      <div class="menu-buttons-row">
+        <button id="pause-resume-btn" class="kenney-btn kenney-btn-green">RESUME</button>
+        <button id="pause-home-btn" class="kenney-btn kenney-btn-grey">HOME</button>
+      </div>
     </div>
 
     <!-- Home / title screen -->
@@ -102,6 +139,9 @@
           <p><strong>Mouse</strong> &mdash; aim</p>
           <p><strong>Click</strong> &mdash; shoot</p>
           <p><strong>R</strong> &mdash; reload</p>
+          <p><strong>Hold Q</strong> &mdash; swap gun</p>
+          <p><strong>Right-click</strong> &mdash; throw grenade</p>
+          <p><strong>Esc</strong> &mdash; pause</p>
         </div>
       </div>
     </div>
@@ -134,7 +174,13 @@
           <input type="range" id="sensitivity-slider" min="0.3" max="2.5" step="0.1" />
           <span id="sensitivity-value" class="settings-value">1.0x</span>
         </div>
+        <div class="settings-row">
+          <label for="music-slider">MUSIC</label>
+          <input type="range" id="music-slider" min="0" max="1" step="0.05" />
+          <span id="music-value" class="settings-value">50%</span>
+        </div>
       </div>
+      <button id="music-reset-btn" class="kenney-btn kenney-btn-grey kenney-btn-small">RESET MUSIC VOLUME</button>
 
       <button id="settings-back-btn" class="kenney-btn kenney-btn-grey">BACK</button>
     </div>

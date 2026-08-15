@@ -57,6 +57,19 @@ export class Enemy {
     }
 
     this._attackTimer = this.attackCooldown * 0.5;
+    // Fixed per-enemy left/right bias for obstacle avoidance below — keeping
+    // it constant (rather than recomputed each frame) stops the steering
+    // from flip-flopping between sides when the desired path points nearly
+    // straight at an obstacle's center.
+    this._avoidSide = Math.random() < 0.5 ? 1 : -1;
+    // Stuck-escape bookkeeping: periodically checks whether the enemy has
+    // actually moved despite wanting to (tangent-slide steering alone can
+    // still wedge into a concave corner or doorway gap where the nearest
+    // wall segment keeps flipping); if not, forceEscapeTimer briefly
+    // overrides steering with a hard push away from whatever's closest.
+    this._stuckCheckTimer = 0.5;
+    this._stuckCheckPos = { x, z };
+    this._escapeTimer = 0;
 
     this.mesh = createGroundSprite(textures[def.textureKey], def.spriteSize, 0.09);
     this.mesh.position.set(x, 0.09, z);
@@ -107,8 +120,81 @@ export class Enemy {
     }
 
     if (wantsToMove) {
+      // Stuck-escape check: every 0.5s, verify the enemy actually covered
+      // some distance despite wanting to move. Tangent-slide steering
+      // (below) handles a single wall fine, but can still wedge an enemy
+      // into a concave corner or doorway gap where the nearest blocking
+      // segment keeps flipping and the two competing slide directions
+      // cancel out. When that happens, force a hard push away from
+      // whatever's closest for a short window, ignoring the chase target
+      // entirely, which reliably breaks it free.
+      this._stuckCheckTimer -= dt;
+      if (this._stuckCheckTimer <= 0) {
+        const moved = Math.hypot(
+          this.mesh.position.x - this._stuckCheckPos.x,
+          this.mesh.position.z - this._stuckCheckPos.z
+        );
+        if (moved < 0.3) this._escapeTimer = 0.6;
+        this._stuckCheckPos = { x: this.mesh.position.x, z: this.mesh.position.z };
+        this._stuckCheckTimer = 0.5;
+      }
+
       let mx = moveX;
       let mz = moveZ;
+      let escaping = false;
+
+      if (this._escapeTimer > 0) {
+        escaping = true;
+        this._escapeTimer -= dt;
+        let nearestC = null;
+        let nearestD = Infinity;
+        for (const c of colliders) {
+          const cdx = this.mesh.position.x - c.x;
+          const cdz = this.mesh.position.z - c.z;
+          const cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+          if (cdist < nearestD) {
+            nearestD = cdist;
+            nearestC = { cdx, cdz, cdist };
+          }
+        }
+        if (nearestC && nearestC.cdist > 1e-4) {
+          const awayX = nearestC.cdx / nearestC.cdist;
+          const awayZ = nearestC.cdz / nearestC.cdist;
+          mx = awayX * 0.7 - awayZ * this._avoidSide * 0.7;
+          mz = awayZ * 0.7 + awayX * this._avoidSide * 0.7;
+        }
+      } else {
+        // Steer around anything blocking the desired path instead of
+        // walking straight into it — only the single nearest blocker is
+        // considered, since building walls are a dense run of overlapping
+        // per-tile colliders and summing a slide contribution from every
+        // one of them in range over-corrects (each pushes the same
+        // direction, stacking into a vector that overwhelms the pull
+        // toward the target instead of just deflecting around the wall).
+        let nearestBlocker = null;
+        let nearestDist = Infinity;
+        for (const c of colliders) {
+          const cdx = c.x - this.mesh.position.x;
+          const cdz = c.z - this.mesh.position.z;
+          const cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+          const lookahead = this.radius + c.radius + 1.5;
+          if (cdist > 1e-4 && cdist < lookahead && cdist < nearestDist) {
+            const towardObstacle = (cdx / cdist) * mx + (cdz / cdist) * mz;
+            if (towardObstacle > 0.3) {
+              nearestBlocker = { cdx, cdz, cdist, radius: c.radius };
+              nearestDist = cdist;
+            }
+          }
+        }
+        if (nearestBlocker) {
+          const { cdx, cdz, cdist, radius } = nearestBlocker;
+          const tangentX = (-cdz / cdist) * this._avoidSide;
+          const tangentZ = (cdx / cdist) * this._avoidSide;
+          const strength = 1 - (cdist - this.radius - radius) / 1.5;
+          mx += tangentX * strength * 1.2;
+          mz += tangentZ * strength * 1.2;
+        }
+      }
 
       for (const other of others) {
         if (other === this || !other.alive) continue;
@@ -128,15 +214,24 @@ export class Enemy {
       let nextX = this.mesh.position.x + mx * this.speed * dt;
       let nextZ = this.mesh.position.z + mz * this.speed * dt;
 
-      for (const c of colliders) {
-        const cdx = nextX - c.x;
-        const cdz = nextZ - c.z;
-        const minDist = this.radius + c.radius;
-        const cdist = Math.sqrt(cdx * cdx + cdz * cdz);
-        if (cdist < minDist && cdist > 1e-4) {
-          const push = minDist - cdist;
-          nextX += (cdx / cdist) * push;
-          nextZ += (cdz / cdist) * push;
+      // Skip the overlap correction below while escaping: if the enemy is
+      // wedged in a pocket tighter than its own diameter (a tight concave
+      // corner where multiple wall-tile colliders overlap), this correction
+      // would just shove the escape push straight back where it came from,
+      // same as the chase-direction freeze this whole system exists to fix.
+      // Letting it briefly clip through geometry for this short window is
+      // unnoticeable and guarantees it actually gets clear.
+      if (!escaping) {
+        for (const c of colliders) {
+          const cdx = nextX - c.x;
+          const cdz = nextZ - c.z;
+          const minDist = this.radius + c.radius;
+          const cdist = Math.sqrt(cdx * cdx + cdz * cdz);
+          if (cdist < minDist && cdist > 1e-4) {
+            const push = minDist - cdist;
+            nextX += (cdx / cdist) * push;
+            nextZ += (cdz / cdist) * push;
+          }
         }
       }
 

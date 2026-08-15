@@ -6,6 +6,7 @@ import * as THREE from "three";
 const TANK_BASE = "public/assets/kenney_top-down-tanks-remastered/PNG/Default size/";
 const SHOOTER_BASE = "public/assets/kenney_top-down-shooter/PNG/";
 const SHOOTER_TILES = SHOOTER_BASE + "Tiles/";
+const BLASTER_PREVIEWS = "public/assets/kenney_blaster-kit_2.1/Previews/";
 
 export const ASSET_PATHS = {
   // Playable character skins (see js/characters.js CHARACTER_SKINS).
@@ -68,6 +69,13 @@ export const ASSET_PATHS = {
   powerupHealth: TANK_BASE + "specialBarrel1.png",
   powerupSpeed: TANK_BASE + "tracksDouble.png",
   powerupRapidFire: TANK_BASE + "bulletGreen1.png",
+
+  // Weapon/ammo/grenade field pickups (see js/fieldPickups.js).
+  pickupRifle: BLASTER_PREVIEWS + "blaster-e.png",
+  pickupShotgun: BLASTER_PREVIEWS + "blaster-j.png",
+  pickupHeavy: BLASTER_PREVIEWS + "blaster-q.png",
+  pickupAmmo: BLASTER_PREVIEWS + "clip-large.png",
+  pickupGrenade: BLASTER_PREVIEWS + "grenade-a.png",
 
   // Footstep dust puffs (see js/dust.js).
   footstepDust_0: TANK_BASE + "explosionSmoke1.png",

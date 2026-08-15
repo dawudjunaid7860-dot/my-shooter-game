@@ -100,6 +100,7 @@ export const LEVEL_DEFS = [
     enemyQuota: 10,
     maxConcurrent: 6,
     spawnInterval: 1.4,
+    objective: "Defeat 10 enemies, then survive the boss to clear the level. Pick up guns, ammo, and grenades scattered around the map.",
     difficultyMultiplier: { speed: 1, health: 1, damage: 1 },
     enemyMix: [
       { type: "grunt", weight: 3 },
@@ -112,6 +113,7 @@ export const LEVEL_DEFS = [
     enemyQuota: 18,
     maxConcurrent: 9,
     spawnInterval: 1.0,
+    objective: "A tougher wave: 18 enemies including heavy tanks and snipers. Defeat them all, then take down the boss.",
     difficultyMultiplier: { speed: 1.15, health: 1.3, damage: 1.2 },
     enemyMix: [
       { type: "grunt", weight: 3 },
