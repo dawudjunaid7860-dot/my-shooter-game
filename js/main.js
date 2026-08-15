@@ -208,6 +208,7 @@ function updateGameplay(dt) {
     };
     bulletSystem.spawn(spawnPos, forward, { damage: player.damage });
     muzzleFlash.spawn(spawnPos, forward);
+    audio.play("gunshot");
   }
 
   bulletSystem.update(dt, enemySpawner.enemies, colliders, (enemy, damage) => {
@@ -217,6 +218,7 @@ function updateGameplay(dt) {
     const died = enemy.takeDamage(damage);
     if (died) {
       explosions.spawn(enemy.position, enemy.type === "boss" ? 5 : 2.6);
+      audio.play("explosion", enemy.type === "boss" ? 1 : 0.7);
       save.addCurrency(enemy.currencyValue);
       runCurrencyEarned += enemy.currencyValue;
       hud.updateScore(save.currency);
@@ -246,6 +248,7 @@ function updateGameplay(dt) {
       const spawnPos = { x: position.x + direction.x * 1.2, z: position.z + direction.z * 1.2 };
       enemyBulletSystem.spawn(spawnPos, direction, { speed: bulletSpeed, damage });
       muzzleFlash.spawn(spawnPos, direction, 0.7);
+      audio.play("gunshot", 0.5);
     }
   );
 

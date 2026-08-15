@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-12T23:54:08.255Z",
+  "generatedAt": "2026-08-15T05:57:55.320Z",
   "root": "public/assets",
-  "totalAssets": 2510,
+  "totalAssets": 2512,
   "packs": [
     {
       "name": "kenney_blaster-kit_2.1",
@@ -26,6 +26,12 @@
       "source": "Kenney (kenney.nl)",
       "license": "public/assets/kenney_ui-pack/License.txt",
       "totalAssets": 1315
+    },
+    {
+      "name": "custom-sounds",
+      "source": "Pixabay (pixabay.com/sound-effects) - free, no attribution required",
+      "license": null,
+      "totalAssets": 2
     }
   ],
   "categories": {
@@ -43352,6 +43358,20 @@
       "category": "meta",
       "color": null,
       "variant": null
+    },
+    {
+      "name": "gunshot.mp3",
+      "path": "public/assets/sounds/gunshot.mp3",
+      "pack": "custom-sounds",
+      "type": "mp3",
+      "category": "sounds"
+    },
+    {
+      "name": "explosion.mp3",
+      "path": "public/assets/sounds/explosion.mp3",
+      "pack": "custom-sounds",
+      "type": "mp3",
+      "category": "sounds"
     }
   ]
 }
