@@ -3,6 +3,7 @@
 // owned by screens.js.
 export class HUD {
   constructor() {
+    this.root = document.getElementById("hud");
     this.healthFill = document.getElementById("health-fill");
     this.ammoCount = document.getElementById("ammo-count");
     this.reserveCount = document.getElementById("reserve-count");
@@ -27,6 +28,14 @@ export class HUD {
     this._flashTimeout = null;
     this._hitMarkerTimeout = null;
     this._toastTimeout = null;
+  }
+
+  // The gameplay HUD (health/ammo/minimap/pause button/etc) lives in the
+  // DOM before every menu overlay, so without this it stays visible (and,
+  // since overlay backgrounds aren't 100% opaque, faintly bleeds through)
+  // on the home/upgrades/settings/level-select/pause screens too.
+  setVisible(visible) {
+    this.root.classList.toggle("hidden", !visible);
   }
 
   updateWeapon(label, icon) {

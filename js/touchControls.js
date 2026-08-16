@@ -2,13 +2,16 @@
 // "mobile-controls-1" pack. Only shown on touch-capable devices (see
 // isTouchDevice() below), so desktop/mouse play is completely unaffected.
 //
-// Two floating joysticks (appear wherever the thumb first lands within
-// their half of the screen, standard mobile-shooter ergonomics): left for
-// movement, right for aim+fire (dragging it both aims AND fires — the
-// same drag-to-shoot convention most mobile twin-stick shooters use, so no
-// separate fire button is needed). Two small discrete-action buttons
-// (grenade, weapon-swap) sit above the aim joystick since the right thumb
-// briefly taps them between aiming. The weapon-swap button reuses the
+// Two fixed, always-visible joysticks (Brawl Stars style — the base stays
+// on screen at a set spot rather than popping up wherever you first touch):
+// left for movement, right for aim+fire (dragging it both aims AND fires —
+// the same drag-to-shoot convention most mobile twin-stick shooters use, so
+// no separate fire button is needed). Touching anywhere in that half of the
+// screen still grabs the stick (a larger, forgiving catch zone), but the
+// nub always measures its offset from the fixed base and snaps back to
+// center on release rather than disappearing. Two small discrete-action
+// buttons (grenade, weapon-swap) sit above the aim joystick since the right
+// thumb briefly taps them between aiming. The weapon-swap button reuses the
 // exact same WeaponWheel hover/confirm logic as the desktop hold-Q wheel —
 // press and drag to pick a gun, release to equip.
 const CONTROLS_BASE = "public/assets/mobile-controls-1 (2)/Sprites/Style A/Default/";
@@ -24,53 +27,36 @@ export function isTouchDevice() {
   return navigator.maxTouchPoints > 0 || "ontouchstart" in window;
 }
 
-function makeJoystick(zoneEl) {
+function makeJoystick(zoneEl, visualParent, baseClass) {
   const pad = document.createElement("img");
   pad.src = PAD_ICON;
-  pad.className = "touch-joystick-pad";
+  pad.className = `touch-joystick-pad ${baseClass}`;
   const nub = document.createElement("img");
   nub.src = NUB_ICON;
-  nub.className = "touch-joystick-nub";
-  zoneEl.appendChild(pad);
-  zoneEl.appendChild(nub);
-  pad.style.display = "none";
-  nub.style.display = "none";
+  nub.className = `touch-joystick-nub ${baseClass}`;
+  // Appended to the full-width root (not the half-width touch zone) so
+  // percentage-based CSS positioning is relative to the whole screen —
+  // touch events are still bound to zoneEl below, this is purely visual.
+  visualParent.appendChild(pad);
+  visualParent.appendChild(nub);
 
   const state = { x: 0, z: 0, active: false, pointerId: null };
 
-  function start(e) {
-    if (state.pointerId !== null) return;
-    state.pointerId = e.pointerId;
-    state.active = true;
-    const rect = zoneEl.getBoundingClientRect();
-    const cx = e.clientX;
-    const cy = e.clientY;
-    pad.style.left = `${cx - rect.left}px`;
-    pad.style.top = `${cy - rect.top}px`;
-    nub.style.left = `${cx - rect.left}px`;
-    nub.style.top = `${cy - rect.top}px`;
-    pad.style.display = "block";
-    nub.style.display = "block";
-    zoneEl.dataset.centerX = cx;
-    zoneEl.dataset.centerY = cy;
-    move(e);
+  function baseCenter() {
+    const r = pad.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
 
-  function move(e) {
-    if (e.pointerId !== state.pointerId) return;
-    const cx = Number(zoneEl.dataset.centerX);
-    const cy = Number(zoneEl.dataset.centerY);
-    const rect = zoneEl.getBoundingClientRect();
-    let dx = e.clientX - cx;
-    let dy = e.clientY - cy;
+  function applyDelta(cx, cy, clientX, clientY) {
+    let dx = clientX - cx;
+    let dy = clientY - cy;
     const dist = Math.hypot(dx, dy);
     const clamped = Math.min(dist, JOYSTICK_RADIUS);
     if (dist > 1e-4) {
       dx = (dx / dist) * clamped;
       dy = (dy / dist) * clamped;
     }
-    nub.style.left = `${cx - rect.left + dx}px`;
-    nub.style.top = `${cy - rect.top + dy}px`;
+    nub.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px)`;
 
     const nx = dx / JOYSTICK_RADIUS;
     const nz = dy / JOYSTICK_RADIUS;
@@ -84,14 +70,29 @@ function makeJoystick(zoneEl) {
     }
   }
 
+  function start(e) {
+    if (state.pointerId !== null) return;
+    state.pointerId = e.pointerId;
+    state.active = true;
+    nub.classList.add("dragging");
+    const c = baseCenter();
+    applyDelta(c.x, c.y, e.clientX, e.clientY);
+  }
+
+  function move(e) {
+    if (e.pointerId !== state.pointerId) return;
+    const c = baseCenter();
+    applyDelta(c.x, c.y, e.clientX, e.clientY);
+  }
+
   function end(e) {
     if (e.pointerId !== state.pointerId) return;
     state.pointerId = null;
     state.active = false;
     state.x = 0;
     state.z = 0;
-    pad.style.display = "none";
-    nub.style.display = "none";
+    nub.classList.remove("dragging");
+    nub.style.transform = "translate(-50%, -50%)";
   }
 
   zoneEl.addEventListener("pointerdown", start);
@@ -119,8 +120,8 @@ export class TouchControls {
     this.root.appendChild(this.moveZone);
     this.root.appendChild(this.aimZone);
 
-    this.moveStick = makeJoystick(this.moveZone);
-    this.aimStick = makeJoystick(this.aimZone);
+    this.moveStick = makeJoystick(this.moveZone, this.root, "touch-joystick-move");
+    this.aimStick = makeJoystick(this.aimZone, this.root, "touch-joystick-aim");
 
     this.grenadeBtn = this._makeActionButton("touch-btn-grenade", GRENADE_ICON);
     this.weaponBtn = this._makeActionButton("touch-btn-weapon", null);

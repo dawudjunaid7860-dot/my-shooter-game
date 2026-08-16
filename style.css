@@ -33,6 +33,10 @@ html, body {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
+#hud.hidden {
+  display: none;
+}
+
 .hud-panel {
   position: absolute;
   margin: 16px;
@@ -318,7 +322,8 @@ html, body {
   gap: 14px;
   background:
     radial-gradient(ellipse 900px 700px at 50% 28%, rgba(74, 122, 48, 0.35), transparent 65%),
-    radial-gradient(circle at 50% 30%, rgba(22, 38, 18, 0.94), rgba(4, 8, 4, 0.97) 72%);
+    radial-gradient(circle at 50% 30%, rgba(22, 38, 18, 0.94), rgba(4, 8, 4, 0.97) 72%),
+    #05070a;
   color: #eaf5ea;
   text-align: center;
 }
@@ -967,13 +972,39 @@ html, body {
   right: 0;
 }
 
+/* Fixed, always-visible joystick bases (Brawl Stars style) rather than
+   popping up wherever first touched — position is anchored to each base's
+   CENTER point via left/right+bottom, with transform:translate(-50%,-50%)
+   centering the (differently-sized) pad/nub images on that same point.
+   touchControls.js appends its own extra translate() for the drag offset. */
 .touch-joystick-pad,
 .touch-joystick-nub {
   position: absolute;
+  /* Same double-shift pitfall as `right` above, but on the vertical axis —
+     top+calc() measured from the bottom is the correct transform-centered
+     equivalent of "105px up from the bottom edge". */
+  top: calc(100% - max(env(safe-area-inset-bottom), 0px) - 105px);
   transform: translate(-50%, -50%);
   pointer-events: none;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
-  opacity: 0.85;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.touch-joystick-nub.dragging {
+  opacity: 1;
+}
+
+.touch-joystick-move {
+  left: 105px;
+}
+
+/* `right:105px` combined with `transform:translate(-50%,-50%)` would
+   double-shift (the -50% is computed from the element's own box AFTER
+   `right` already placed it) — left+calc() is the correct pattern for a
+   transform-centered element measured from the opposite edge. */
+.touch-joystick-aim {
+  left: calc(100% - 105px);
 }
 
 .touch-joystick-pad {
@@ -988,7 +1019,7 @@ html, body {
 
 .touch-action-btn {
   position: absolute;
-  right: max(env(safe-area-inset-right), 20px);
+  right: calc(max(env(safe-area-inset-right), 0px) + 230px);
   width: 58px;
   height: 58px;
   pointer-events: auto;
@@ -1008,12 +1039,16 @@ html, body {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
+/* Stacked to the LEFT of the fixed aim joystick rather than above it —
+   landscape phones are wide, not tall, and the vertical gap between the
+   top HUD stats panel and the joystick is too tight on short screens
+   (iPhone SE etc) to stack two buttons there without overlapping either. */
 #touch-btn-grenade {
-  bottom: calc(max(env(safe-area-inset-bottom), 0px) + 150px);
+  bottom: calc(max(env(safe-area-inset-bottom), 0px) + 70px);
 }
 
 #touch-btn-weapon {
-  bottom: calc(max(env(safe-area-inset-bottom), 0px) + 80px);
+  bottom: calc(max(env(safe-area-inset-bottom), 0px) + 140px);
 }
 
 #touch-btn-weapon .touch-action-btn-icon {
@@ -1076,13 +1111,51 @@ html, body {
     font-size: 18px;
   }
 
-  #minimap {
-    width: 90px;
-    height: 90px;
+  /* Minimap and ammo panel move from the bottom corners (where the fixed
+     joysticks now permanently live) to just below the top stat panels —
+     offsets differ since the health panel (top-left) is shorter than the
+     currency/level/enemies panel (top-right). */
+  #hud-bottom-left {
+    bottom: auto;
+    top: 78px;
   }
 
+  #hud-bottom-right {
+    bottom: auto;
+    top: 122px;
+    text-align: right;
+    padding: 6px 10px;
+  }
+
+  #minimap {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* The ammo panel needs to fit in the gap between the top stats panel and
+     the fixed aim joystick below it — on a short landscape screen (iPhone
+     SE etc) that's under 100px, so trim this down to just the essentials:
+     ammo count and reserve. Weapon name/icon and the "AMMO" label are
+     redundant with what the wheel already shows; "R to reload" specifically
+     doesn't apply to touch (reload is automatic there) though the
+     Reloading/out-of-ammo state text is still shown, just smaller. */
   #ammo-count {
-    font-size: 22px;
+    font-size: 18px;
+  }
+
+  #weapon-name-row,
+  #hud-bottom-right .bar-label {
+    display: none;
+  }
+
+  #reserve-count {
+    font-size: 12px;
+  }
+
+  #reload-hint {
+    font-size: 10px;
+    margin: 2px 0 4px;
+    height: auto;
   }
 
   #weapon-name-row {
